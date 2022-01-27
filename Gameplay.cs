@@ -25,12 +25,13 @@ namespace MaliChess
         public static bool InMatch = false;
         public static int MatchId;
         public static List<ChessPiece> Player = new List<ChessPiece>();
-        private List<ChessPiece> _enemy = new List<ChessPiece>();
-        private List<Vector3> _legalMoves = new List<Vector3>();
-        private bool _staticBoard = false;
+        public static List<ChessPiece> Enemy = new List<ChessPiece>();
+        public static List<Vector3> LegalMoves = new List<Vector3>();
+        public static bool StaticBoard = false;
         private bool _keyTrigger = true;
         private bool _keyTrigger2 = true;
-        private Vector3 _eatenPieces = new Vector3(9, 0, -8);
+        public static Vector3 EatenPieces = new Vector3(9, 0, -8);
+        public static int EnemyId;
         public unsafe override void Run(string pluginDir)
         {
             try
@@ -64,7 +65,7 @@ namespace MaliChess
 
             }
 
-            foreach (ChessPiece piece in _enemy)
+            foreach (ChessPiece piece in Enemy)
             {
                 piece.RenderModel();
 
@@ -86,24 +87,35 @@ namespace MaliChess
                 string message = ((VicinityMessage)chatMessage).Text;
                 uint sender = ((VicinityMessage)chatMessage).Sender;
 
-                if (message == "MCR" && !InMatch && sender != DynelManager.LocalPlayer.Identity.Instance)
+                if (action == "MCC" && !InMatch && sender != DynelManager.LocalPlayer.Identity.Instance)
                 {
-                    UI.CreateRequestWindow(((VicinityMessage)chatMessage).Sender.ToString());
-                    InMatch = true;
+                    int index = Convert.ToInt32(data[1]);
+                    if (index == DynelManager.LocalPlayer.Identity.Instance)
+                    {
+                        UI.CreateRequestWindow(((VicinityMessage)chatMessage).Sender.ToString());
+                        InMatch = true;
+                    }
+                }
+
+                if (action == "MCD")
+                {
+                    InMatch = false;
                 }
 
                 if (action == "MCA")
                 {
+
                     MatchId = Convert.ToInt32(data[1]);
 
                     if (MatchId == DynelManager.LocalPlayer.Identity.Instance)
                     {
+                        EnemyId = Convert.ToInt32(sender);
                         Player = ChessPiecesWhite;
-                        _enemy = ChessPiecesBlack;
+                        Enemy = ChessPiecesBlack;
                     }
                     else
                     {
-                        _enemy = ChessPiecesWhite;
+                        Enemy = ChessPiecesWhite;
                         Player = ChessPiecesBlack;
                     }
 
@@ -112,20 +124,22 @@ namespace MaliChess
                     foreach (ChessPiece piece in Player)
                         piece.HostInstance = hostMode;
 
-                    foreach (ChessPiece piece in _enemy)
+                    foreach (ChessPiece piece in Enemy)
                         piece.HostInstance = hostMode;
                 }
 
                 //so trolls cant fk up your match
 
-                if (sender == DynelManager.LocalPlayer.Identity.Instance)
+                if (sender == DynelManager.LocalPlayer.Identity.Instance) //self protection
                     return;
 
+                if (sender != MatchId && sender != EnemyId)
+                    return;
 
                 if (action == "MCU")
                 {
                     Vector3 locPos = new Vector3(Convert.ToDouble(data[1]), Convert.ToDouble(data[2]), Convert.ToDouble(data[3]));
-                    ChessPiece chessPiece = _enemy.Find(x => x.LocalPosition == locPos);
+                    ChessPiece chessPiece = Enemy.Find(x => x.LocalPosition == locPos);
                     chessPiece.EnemyInstance = Convert.ToInt32(sender);
                 }
 
@@ -133,20 +147,20 @@ namespace MaliChess
                 {
                     int index = Convert.ToInt32(data[1]);
                     Vector3 locPos = new Vector3(Convert.ToDouble(data[2]), Convert.ToDouble(data[3]), Convert.ToDouble(data[4]));
-                    _enemy[index].LocalPosition = locPos;
-                    _enemy[index].EnemyInstance = 0;
+                    Enemy[index].LocalPosition = locPos;
+                    Enemy[index].EnemyInstance = 0;
 
                     foreach (ChessPiece piece in Player)
                     {
                         if (piece.LocalPosition == locPos)
                         {
-                            _eatenPieces = new Vector3(_eatenPieces.X, _eatenPieces.Y, _eatenPieces.Z + 1);
-                            piece.LocalPosition = new Vector3(_eatenPieces.X, 0, _eatenPieces.Z);
+                            EatenPieces = new Vector3(EatenPieces.X, EatenPieces.Y, EatenPieces.Z + 1);
+                            piece.LocalPosition = new Vector3(EatenPieces.X, 0, EatenPieces.Z);
                             piece.Eaten = true;
 
-                            if (_eatenPieces.Z == 0)
+                            if (EatenPieces.Z == 0)
                             {
-                                _eatenPieces = new Vector3(_eatenPieces.X + 1, _eatenPieces.Y, -8);
+                                EatenPieces = new Vector3(EatenPieces.X + 1, EatenPieces.Y, -8);
                             }
 
                             break;
@@ -160,10 +174,17 @@ namespace MaliChess
                     int type = Convert.ToInt32(data[1]);
                     Vector3 locPos = new Vector3(Convert.ToDouble(data[2]), Convert.ToDouble(data[3]), Convert.ToDouble(data[4]));
 
-                    ChessPiece selectedPiece = _enemy.Find(x => x.LocalPosition == locPos);
-                    selectedPiece._mesh = _enemy.Find(x => x.Type == (Type)type)._mesh;
+                    ChessPiece selectedPiece = Enemy.Find(x => x.LocalPosition == locPos);
+                    selectedPiece._mesh = Enemy.Find(x => x.Type == (Type)type)._mesh;
                     selectedPiece.Type = (Type)type;
                 }
+
+                if (action == "MCF")
+                {
+                    GenerateModels.ResetBoard();
+                }
+
+                // host only
 
                 if (sender != MatchId)
                     return;
@@ -192,7 +213,7 @@ namespace MaliChess
                 if (movingPiece != null)
                     ShowLegalMoves(movingPiece);
 
-                if (Keyboard.IsKeyDown(Key.R) && ApplicationIsActivated() && _staticBoard)
+                if (Keyboard.IsKeyDown(Key.LeftShift) && Keyboard.IsKeyDown(Key.E) && ApplicationIsActivated() && StaticBoard)
                 {
                     if (_keyTrigger2)
                     {
@@ -200,16 +221,16 @@ namespace MaliChess
                         {
                             if (Player.Where(x => x.MoveMode == true).FirstOrDefault() == null)
                             {
-                                Chat.SendVicinityMessage($"MCU {selectedPiece.LocalPosition.X} {selectedPiece.LocalPosition.Y} {selectedPiece.LocalPosition.Z}");
+                                Chat.SendVicinityMessage($"MCU {selectedPiece.LocalPosition.X} {selectedPiece.LocalPosition.Y} {selectedPiece.LocalPosition.Z}",VicinityMessageType.Shout);
                                 selectedPiece.MoveMode = true;
-                                _legalMoves = new List<Vector3>();
+                                LegalMoves = new List<Vector3>();
                             }
                         }
                         else // placing a piece
                         {
                             float distance = 5;
                             Vector3 shortestMove = Vector3.Zero;
-                            foreach (Vector3 move in _legalMoves)
+                            foreach (Vector3 move in LegalMoves)
                             {
                                 if (Vector3.Distance(DynelManager.LocalPlayer.Position, move) < distance)
                                 {
@@ -221,24 +242,24 @@ namespace MaliChess
                             Vector3 newLocPos = selectedPiece.LocalPosition + shortestMove - selectedPiece.RestPosition;
 
 
-                            foreach (ChessPiece piece in _enemy)
+                            foreach (ChessPiece piece in Enemy)
                             {
                                 if (piece.LocalPosition == newLocPos)
                                 {
-                                    _eatenPieces = new Vector3(_eatenPieces.X, _eatenPieces.Y, _eatenPieces.Z + 1);
-                                    piece.LocalPosition = new Vector3(_eatenPieces.X, 0, _eatenPieces.Z);
+                                    EatenPieces = new Vector3(EatenPieces.X, EatenPieces.Y, EatenPieces.Z + 1);
+                                    piece.LocalPosition = new Vector3(EatenPieces.X, 0, EatenPieces.Z);
                                     piece.Eaten = true;
 
-                                    if (_eatenPieces.Z == 0)
+                                    if (EatenPieces.Z == 0)
                                     {
-                                        _eatenPieces = new Vector3(_eatenPieces.X + 1, _eatenPieces.Y, -8);
+                                        EatenPieces = new Vector3(EatenPieces.X + 1, EatenPieces.Y, -8);
                                     }
 
                                     break;
                                 }
                             }
 
-                            Chat.SendVicinityMessage($"MCR2 {index} {newLocPos.X} {newLocPos.Y} {newLocPos.Z}");
+                            Chat.SendVicinityMessage($"MCR2 {index} {newLocPos.X} {newLocPos.Y} {newLocPos.Z}", VicinityMessageType.Shout);
 
                             if (selectedPiece.Type == Type.Pawn)
                             {
@@ -260,14 +281,14 @@ namespace MaliChess
         }
         private void ShowLegalMoves(ChessPiece selectedPiece)
         {
-            if (_legalMoves.Count() != 0)
+            if (LegalMoves.Count() != 0)
             {
-                foreach (Vector3 legalMove in _legalMoves)
+                foreach (Vector3 legalMove in LegalMoves)
                     Debug.DrawSphere(legalMove, 0.25f, DebuggingColor.Green);
                 return;
             }
 
-            _legalMoves.Add(selectedPiece.RestPosition);
+            LegalMoves.Add(selectedPiece.RestPosition);
 
             if (selectedPiece.Type == Type.Rook)
             {
@@ -309,10 +330,10 @@ namespace MaliChess
                         if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                             break;
 
-                        if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                        if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                             break;
 
-                        _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                        LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
                     }
                 }
@@ -321,18 +342,18 @@ namespace MaliChess
                 {
                     Vector3 moveVector = Vector3.Forward * -1;
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null &&
-                        _enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                        _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                        Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
+                        LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 }
 
                 List<Vector3> attackMoves = new List<Vector3> { new Vector3(1, 0, -1), new Vector3(-1, 0, -1) };
 
-                foreach (ChessPiece enemyPiece in _enemy)
+                foreach (ChessPiece enemyPiece in Enemy)
                 {
                     foreach (Vector3 attackMove in attackMoves)
                     {
                         if (selectedPiece.LocalPosition + attackMove == enemyPiece.LocalPosition)
-                            _legalMoves.Add(selectedPiece.RestPosition + attackMove);
+                            LegalMoves.Add(selectedPiece.RestPosition + attackMove);
                     }
                 }
             }
@@ -347,10 +368,10 @@ namespace MaliChess
                         if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                             break;
 
-                        if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                        if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                             break;
 
-                        _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                        LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
                     }
                 }
@@ -359,18 +380,18 @@ namespace MaliChess
                 {
                     Vector3 moveVector = Vector3.Forward ;
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null &&
-                        _enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                        _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                        Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
+                        LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 }
 
                 List<Vector3> attackMoves = new List<Vector3> { new Vector3(1, 0, 1), new Vector3(-1, 0, 1) };
 
-                foreach (ChessPiece enemyPiece in _enemy)
+                foreach (ChessPiece enemyPiece in Enemy)
                 {
                     foreach (Vector3 attackMove in attackMoves)
                     {
                         if (selectedPiece.LocalPosition + attackMove == enemyPiece.LocalPosition)
-                            _legalMoves.Add(selectedPiece.RestPosition + attackMove);
+                            LegalMoves.Add(selectedPiece.RestPosition + attackMove);
                     }
                 }
             }
@@ -382,11 +403,11 @@ namespace MaliChess
             {
                 Vector3 moveVector = Vector3.Forward * -1 * i;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 else
                     break;
 
-                if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                     break;
             }
             //down
@@ -394,11 +415,11 @@ namespace MaliChess
             {
                 Vector3 moveVector = Vector3.Forward * i;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 else
                     break;
 
-                if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                     break;
             }
             //left
@@ -406,11 +427,11 @@ namespace MaliChess
             {
                 Vector3 moveVector = Vector3.Right * i;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 else
                     break;
 
-                if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                     break;
 
             }
@@ -419,11 +440,11 @@ namespace MaliChess
             {
                 Vector3 moveVector = Vector3.Right * -1 * i;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
                 else
                     break;
 
-                if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                     break;
             }
         }
@@ -442,9 +463,9 @@ namespace MaliChess
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
 
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
-                    if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                    if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
                 }
                 else
@@ -462,9 +483,9 @@ namespace MaliChess
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
 
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
-                    if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                    if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
                 }
                 else
@@ -483,9 +504,9 @@ namespace MaliChess
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
 
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
-                    if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                    if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
                 }
                 else
@@ -504,10 +525,10 @@ namespace MaliChess
                     if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
 
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
 
 
-                    if (_enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
+                    if (Enemy.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) != null)
                         break;
                 }
                 else
@@ -521,28 +542,28 @@ namespace MaliChess
             {
                 Vector3 moveVector = new Vector3(-1, 0, -2);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + new Vector3(-1, 0, -2));
+                    LegalMoves.Add(selectedPiece.RestPosition + new Vector3(-1, 0, -2));
             }
             //21r
             if (Math.Abs(selectedPiece.LocalPosition.X) - 2 >= 0 && Math.Abs(selectedPiece.LocalPosition.Z) + 1 <= 7)
             {
                 Vector3 moveVector = new Vector3(-2, 0, -1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //1-2r
             if (Math.Abs(selectedPiece.LocalPosition.X) - 1 >= 0 && Math.Abs(selectedPiece.LocalPosition.Z) - 2 >= 0)
             {
                 Vector3 moveVector = new Vector3(-1, 0, 2);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //2-1r
             if (Math.Abs(selectedPiece.LocalPosition.X) - 2 >= 0 && Math.Abs(selectedPiece.LocalPosition.Z) - 1 >= 0)
             {
                 Vector3 moveVector = new Vector3(-2, 0, 1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
 
             //mirrored
@@ -551,28 +572,28 @@ namespace MaliChess
             {
                 Vector3 moveVector = new Vector3(1, 0, -2);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //-21r
             if (Math.Abs(selectedPiece.LocalPosition.X) + 2 <= 7 && Math.Abs(selectedPiece.LocalPosition.Z) + 1 <= 7)
             {
                 Vector3 moveVector = new Vector3(2, 0, -1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //-1-2r
             if (Math.Abs(selectedPiece.LocalPosition.X) + 1 <= 7 && Math.Abs(selectedPiece.LocalPosition.Z) - 2 >= 0)
             {
                 Vector3 moveVector = new Vector3(1, 0, 2);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //-2-1r
             if (Math.Abs(selectedPiece.LocalPosition.X) + 2 <= 7 && Math.Abs(selectedPiece.LocalPosition.Z) - 1 >= 0)
             {
                 Vector3 moveVector = new Vector3(2, 0, 1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
         }
         private void KingLogic(ChessPiece selectedPiece)
@@ -582,49 +603,49 @@ namespace MaliChess
             {
                 Vector3 moveVector = Vector3.Forward * -1;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //down
             if (Math.Abs(selectedPiece.LocalPosition.Z) - 1 >= 0)
             {
                 Vector3 moveVector = Vector3.Forward;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //RIGHT
             if (Math.Abs(selectedPiece.LocalPosition.X) - 1 >= 0)
             {
                 Vector3 moveVector = Vector3.Right * -1;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //LEFT
             if (Math.Abs(selectedPiece.LocalPosition.X) + 1 <= 7)
             {
                 Vector3 moveVector = Vector3.Right;
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //northeast
             if (Math.Abs(selectedPiece.LocalPosition.X) - 1 >= 0 && Math.Abs(selectedPiece.LocalPosition.Z) + 1 <= 7)
             {
                 Vector3 moveVector = new Vector3(-1, 0, -1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //northwest
             if (Math.Abs(selectedPiece.LocalPosition.X) + 1 <= 7 && Math.Abs(selectedPiece.LocalPosition.Z) + 1 <= 7)
             {
                 Vector3 moveVector = new Vector3(1, 0, -1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
             //southwest
             if (Math.Abs(selectedPiece.LocalPosition.X) + 1 <= 7 && Math.Abs(selectedPiece.LocalPosition.Z) - 1 >= 0)
             {
                 Vector3 moveVector = new Vector3(1, 0, 1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
 
             //southeast
@@ -632,13 +653,13 @@ namespace MaliChess
             {
                 Vector3 moveVector = new Vector3(-1, 0, 1);
                 if (Player.Find(x => x.LocalPosition == selectedPiece.LocalPosition + moveVector) == null)
-                    _legalMoves.Add(selectedPiece.RestPosition + moveVector);
+                    LegalMoves.Add(selectedPiece.RestPosition + moveVector);
             }
 
         }
         private void MoveBoard()
         {
-            if (Keyboard.IsKeyDown(Key.E) && ApplicationIsActivated() && MatchId == DynelManager.LocalPlayer.Identity.Instance)
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) && Keyboard.IsKeyDown(Key.E) && ApplicationIsActivated() && MatchId == DynelManager.LocalPlayer.Identity.Instance)
             {
                 if (Player.Where(x => x.MoveMode == true).Count() == 0)
                 {
@@ -656,17 +677,17 @@ namespace MaliChess
         }
         public void PlaceBoard(Vector3 pos)
         {
-            _staticBoard = !_staticBoard;
+            StaticBoard = !StaticBoard;
 
             foreach (ChessPiece chessPiece in Player)
             {
-                chessPiece.Static = _staticBoard;
+                chessPiece.Static = StaticBoard;
                 chessPiece.PlacedPos = pos;
             }
 
-            foreach (ChessPiece chessPiece in _enemy)
+            foreach (ChessPiece chessPiece in Enemy)
             {
-                chessPiece.Static = _staticBoard;
+                chessPiece.Static = StaticBoard;
                 chessPiece.PlacedPos = pos;
             }
 
@@ -674,10 +695,10 @@ namespace MaliChess
 
             if (DynelManager.LocalPlayer.Identity.Instance == MatchId)
             {
-                if (_staticBoard == true)
-                    Chat.SendVicinityMessage($"MCP {playerPos.X} {playerPos.Y} {playerPos.Z}");
+                if (StaticBoard == true)
+                    Chat.SendVicinityMessage($"MCP {playerPos.X} {playerPos.Y} {playerPos.Z}", VicinityMessageType.Shout);
                 else
-                    Chat.SendVicinityMessage($"MCM");
+                    Chat.SendVicinityMessage($"MCM", VicinityMessageType.Shout);
             }
 
         }

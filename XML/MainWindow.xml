@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" standalone="yes"?>
+<root>
+	<View>
+		<View view_layout="vertical">
+			<TextView value="Mali's Chess Interface" layout_borders="Rect(2,2,2,2)"/>
+			<View view_layout="horizontal">
+				<Button name="challenge" label="Challenge" layout_borders="Rect(2,2,2,2)"/>
+				<Button name="forfeit" label="Forfeit" layout_borders="Rect(2,2,2,2)"/>
+				<Button name="help" label="Help" layout_borders="Rect(2,2,2,2)"/>
+			</View>
+		</View>
+	</View>
+</root>

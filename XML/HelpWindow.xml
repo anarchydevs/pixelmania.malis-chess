@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" standalone="yes"?>
+<root>
+	<View>
+		<View v_alignment="TOP" layout_borders="Rect(8,8,8,8)">
+			<TextView value="* Welcome to Mali's Chess *" layout_borders="Rect(0,0,0,8)"/>
+			<View view_layout="vertical" h_alignment="LEFT" >
+				<TextView value="* QUICK START GUIDE *" layout_borders="Rect(0,0,0,5)"/>
+				<TextView value="1) Target a person and press 'Challenge'" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="2) Other person can accept / deny requests" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="3) Place or pickup the board by pressing ctrl+e " layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="	   (the host can always relocate the board)" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="4) To pickup or place a piece, stay close" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="    to it press shift+e" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="5) Pressing 'Forfeit' will end the match" layout_borders="Rect(0,0,0,10)"/>
+				<TextView value="* TIPS *" layout_borders="Rect(0,0,0,5)"/>
+				<TextView value="- This plugin uses chat proximity and shouting, " layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="  both players should stay close to one another" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="- Don't spam to prevent chat flood protection" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="- Both players can even change zones, the " layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="  board will stay saved until the match ends" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="- If you are in a match, you cant accept other" layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="  matches until the current one is forfeited." layout_borders="Rect(0,0,0,3)"/>
+				<TextView value="- The host is always color white" layout_borders="Rect(0,0,0,10)"/>
+				<TextView value="- Report bugs to: Pixelmania#0349" layout_borders="Rect(0,0,0,3)"/>
+				<View view_layout="horizontal">
+					<HLayoutSpacer/>
+					<TextView value="  ~ Made with AOSharp"/>
+				</View>
+			</View>
+		</View>
+	</View>
+</root>
