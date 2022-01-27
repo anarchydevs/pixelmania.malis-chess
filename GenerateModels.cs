@@ -23,9 +23,8 @@ namespace MaliChess
             try
             {
                 Serialize();
-                GenerateBoard(Side.White);
-                GeneratePlayer(Side.White);
-                GenerateEnemy(Side.Black);
+                ResetBoard();
+
             }
             catch (Exception e)
             {
@@ -33,18 +32,36 @@ namespace MaliChess
             }
         }
 
+        public static void ResetBoard()
+        {
+            Gameplay.MatchId = 0;
+            Gameplay.EnemyId = 0;
+            Gameplay.InMatch = false;
+            Gameplay.StaticBoard = false;
+            Gameplay.LegalMoves = new List<Vector3>();
+            Gameplay.EatenPieces = new Vector3(9, 0, -8);
+            Gameplay.Player = new List<ChessPiece>();
+            Gameplay.Enemy = new List<ChessPiece>();
+            Gameplay.ChessPiecesWhite = new List<ChessPiece>();
+            Gameplay.ChessPiecesBlack = new List<ChessPiece>();
+
+            GenerateBoard(Side.White);
+            GeneratePlayer(Side.White);
+            GenerateEnemy(Side.Black);
+        }
+
         private void Serialize()
         {
             chessPieces = JsonConvert.DeserializeObject<Dictionary<Type, List<Edge>>>(File.ReadAllText($"{UI.PluginDir}\\MeshData\\MeshData.json"));
         }
 
-        private void GenerateBoard(Side side)
+        private static void GenerateBoard(Side side)
         {
             ChessPiece.DefinePiece(Type.BoardBlack, side, new Vector3(0, 0, 0), false);
             ChessPiece.DefinePiece(Type.BoardWhite, side, new Vector3(0, 0, 0), false);
         }
 
-        private void GeneratePlayer(Side side)
+        private static void GeneratePlayer(Side side)
         {
             ChessPiece.DefinePiece(Type.Rook, side, new Vector3(0, 0, 0), false);
             ChessPiece.DefinePiece(Type.Knight, side, new Vector3(1, 0, 0), false);
@@ -64,7 +81,7 @@ namespace MaliChess
             ChessPiece.DefinePiece(Type.Pawn, side, new Vector3(7, 0, -1), false);
         }
 
-        private void GenerateEnemy(Side side)
+        private static void GenerateEnemy(Side side)
         {
             ChessPiece.DefinePiece(Type.Rook, side, new Vector3(7, 0, -7), true);
             ChessPiece.DefinePiece(Type.Knight, side, new Vector3(6, 0, -7), true);

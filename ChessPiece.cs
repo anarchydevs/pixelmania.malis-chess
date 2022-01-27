@@ -28,7 +28,7 @@ namespace MaliChess
         {
             ChessPiece chessPiece = new ChessPiece();
             chessPiece.Type = type;
-            chessPiece.Color = side == Side.White ? new Vector3(1f, 1f, 1f) : new Vector3(1.0f, 0f, 1.0f);
+            chessPiece.Color = side == Side.White ? new Vector3(1f, 1f, 1f) : new Vector3(0f, 1f, 1f);
             chessPiece.LocalPosition = position;
             GenerateModels.chessPieces.TryGetValue(type, out List<Edge> dictMesh);
 
@@ -66,14 +66,14 @@ namespace MaliChess
             Vector3 _Color;
 
             if (Selected)
-                _Color = new Vector3(0, 1, 0);
+                _Color = new Vector3(0f, 1f, 0f);
             else
                 _Color = Color;
 
             if (Type == Type.BoardBlack)
-                _Color = new Vector3(1, 0, 1);
+                _Color = new Vector3(0f, 1f, 1f);
             else if (Type == Type.BoardWhite)
-                _Color = new Vector3(1, 1, 1);
+                _Color = new Vector3(1f, 1f, 1f);
 
 
             if (!Static)
@@ -83,7 +83,7 @@ namespace MaliChess
             else
             {
                 if (EnemyInstance != 0)
-                    _playerPos = DynelManager.Players.First(x => x.Identity.Instance == HostInstance).Position -LocalPosition;
+                    _playerPos = DynelManager.Players.First(x => x.Identity.Instance == EnemyInstance).Position - LocalPosition;
                 else
                     _playerPos = PlacedPos;
             }
