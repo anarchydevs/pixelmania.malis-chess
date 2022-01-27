@@ -7,8 +7,8 @@
     <ProjectGuid>{DC06A28A-0061-4E3E-BF32-A6CF830BEDD9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Mali_Chess</RootNamespace>
-    <AssemblyName>Mali Chess</AssemblyName>
+    <RootNamespace>Malis_Chess</RootNamespace>
+    <AssemblyName>Malis Chess</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>

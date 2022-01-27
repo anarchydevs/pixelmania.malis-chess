@@ -19,7 +19,6 @@ namespace MaliChess
         private static extern IntPtr GetForegroundWindow();
         [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern int GetWindowThreadProcessId(IntPtr handle, out int processId);
-
         public static List<ChessPiece> ChessPiecesWhite = new List<ChessPiece>();
         public static List<ChessPiece> ChessPiecesBlack = new List<ChessPiece>();
         public static bool InMatch = false;
@@ -36,8 +35,7 @@ namespace MaliChess
         {
             try
             {
-                Chat.WriteLine("MaliChess Loaded");
-
+                Chat.WriteLine("Mali's Chess Loaded");
                 Game.OnUpdate += OnUpdate;
                 Network.ChatMessageReceived += Network_ChatMessageReceived;
             }
@@ -46,7 +44,6 @@ namespace MaliChess
                 Chat.WriteLine(e.Message);
             }
         }
-
 
         private unsafe void OnUpdate(object s, float deltaTime)
         {
