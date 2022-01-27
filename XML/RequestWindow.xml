@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" standalone="yes"?>
+<root>
+	<View>
+		<View view_layout="vertical">
+			<TextView value="Chess match request from:" layout_borders="Rect(2,2,2,2)"/>
+			<TextView name="text" value="lolicons" layout_borders="Rect(2,2,2,2)"/>
+			<View view_layout="horizontal">
+				<Button name="yes" label="Accept" layout_borders="Rect(18,2,2,2)"/>
+				<Button name="no" label="Deny" layout_borders="Rect(18,2,2,2)"/>
+			</View>
+		</View>
+	</View>
+</root>

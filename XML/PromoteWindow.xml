@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" standalone="yes"?>
+<root>
+	<View>
+		<View view_layout="vertical">
+			<View view_layout="vertical">
+				<Button name="rook" label="Rook" layout_borders="Rect(2,2,2,2)"/>
+				<Button name="bishop" label="Bishop" layout_borders="Rect(2,2,2,2)"/>
+				<Button name="knight" label="Knight" layout_borders="Rect(2,2,2,2)"/>
+				<Button name="queen" label="Queen" layout_borders="Rect(2,2,2,2)"/>
+			</View>
+		</View>
+	</View>
+</root>
